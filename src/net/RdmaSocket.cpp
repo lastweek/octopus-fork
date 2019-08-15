@@ -1,6 +1,6 @@
 /***********************************************************************
 * 
-* 
+* Implemented by Youmin Chen (chenym16@mails.tsinghua.edu.cn)
 * Tsinghua Univ, 2016
 *
 ***********************************************************************/
@@ -8,7 +8,7 @@
 using namespace std;
 
 RdmaSocket::RdmaSocket(int _cqNum, uint64_t _mm, uint64_t _mmSize, Configuration* _conf, bool _isServer, uint8_t _Mode) :
-DeviceName(NULL), Port(1), ServerPort(5678), GidIndex(0), 
+DeviceName("mlx5_0"), Port(1), ServerPort(5678), GidIndex(0), 
 isRunning(true), isServer(_isServer), cqNum(_cqNum), cqPtr(0), 
 mm(_mm), mmSize(_mmSize), conf(_conf), MaxNodeID(1), Mode(_Mode) {
 	/* Use multiple cq to parallelly process new request. */
@@ -103,6 +103,8 @@ bool RdmaSocket::CreateResources() {
         rc = 1;
         goto CreateResourcesExit;
     }
+
+    printf("%s(): dev name: %s\n", __func__, ibv_get_device_name(dev));
     /* get device handle */
     ctx = ibv_open_device(dev);
     if (!ctx) {
@@ -115,6 +117,7 @@ bool RdmaSocket::CreateResources() {
     DeviceList = NULL;
     dev = NULL;
     /* query port properties */
+    printf("%s(): Port=%d\n", __func__, Port);
     if (ibv_query_port(ctx, Port, &PortAttribute)) {
         Debug::notifyError("ibv_query_port failed");
         rc = 1;
