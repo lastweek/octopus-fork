@@ -32,7 +32,7 @@ set(TOOLS_SRC ${PROJECT_SOURCE_DIR}/src/tools)
 # Build server
 file(GLOB_RECURSE SERVER_SRC ${FS_SRC}/*.cpp ${FS_SRC}/*.c ${NET_SRC}/*.cpp ${TOOLS_SRC}/*.cpp)
 add_executable(dmfs ${SERVER_SRC})
-target_link_libraries(dmfs Threads::Threads)
+#target_link_libraries(dmfs Threads::Threads)
 
 # Build client library
 find_package(JNI)
@@ -47,7 +47,7 @@ file(GLOB_RECURSE NRFS_LIB_SRC ${CNET_SRC}/*.cpp ${CLIB_SRC}/*.cpp ${TOOLS_SRC}/
 add_library(nrfsc SHARED ${NRFS_LIB_SRC})
 add_library(jninrfs SHARED ${NRFS_LIB_SRC} ${CLIB_SRC}/JavaApiImpl.cpp)
 # Build client test
-find_package(MPI REQUIRED)
+#find_package(MPI REQUIRED)
 set (CMAKE_C_COMPILER ${MPI_C_COMPILER})
 set (CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
 #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L/usr/lib64/libfuse.so")
