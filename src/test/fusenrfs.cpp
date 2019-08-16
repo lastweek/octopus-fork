@@ -19,10 +19,17 @@ mutex mtx;
 
 static struct fuse_operations fuse_oper;
 
+#if 0
+#define pr_info()	fprintf(stderr, "%s() called\n", __func__);
+#else
+#define pr_info()	do { }while (0)
+#endif
+
 static int fuse_getattr(const char *path, struct stat *stbuf)
 {
 	FileMeta attr;
 	int res;
+
 	res = nrfsGetAttribute(fs, (nrfsFile)path, &attr);
 	if(res)
 		return -2;
@@ -114,15 +121,19 @@ static int fuse_unlink(const char *path)
 
 static int fuse_release(const char *path, struct fuse_file_info *fi)
 {
+	nrfsCloseFile(fs, (nrfsFile)path);
 	return 0;
 }
 
 static int fuse_truncate(const char *path, off_t size)
 {
+	printf("%s(): unimplemented\n", __func__);
 	return 0;
 }
+
 static int fuse_rename(const char *from, const char *to)
 {
+	pr_info();
 	int res = nrfsRename(fs, from, to);
 	if(res == 0)
 		return 0;
@@ -132,36 +143,58 @@ static int fuse_rename(const char *from, const char *to)
 
 static int fuse_chmod(const char *path, mode_t mode)
 {
+	printf("%s(): unimplemented\n", __func__);
 	return 0;
 }
 
 static int fuse_open(const char *path, struct fuse_file_info *fi)
 {
+	nrfsFile file = nrfsOpenFile(fs, path, O_CREAT);
 	return 0;
 }
+
 static int fuse_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
-	int res;
+	int res, i;
 	lock_guard<mutex> lock(mtx); 
 	res = nrfsRead(fs, (nrfsFile)path, buf, (uint64_t)size, (uint64_t)offset);
-	printf("res = %d\n", res);
 	return res;
 }
+
 static int fuse_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
 	int res;
+
 	lock_guard<mutex> lock(mtx); 
 	res = nrfsWrite(fs, (nrfsFile)path, buf, (uint64_t)size, (uint64_t)offset);
 	return res;
 }
+
+/* their default is 2GB */
 static int fuse_statfs(const char *path, struct statvfs *stbuf)
 {
 	stbuf->f_bsize = 1024 * 1024;
+	stbuf->f_blocks = 16 * 1024;
+
+	/*
+	 * Octopus does not provide such an API
+	 * we have to assume 16GB is always enough here
+	 */
+	stbuf->f_bfree = 16 * 1024;
+	stbuf->f_bavail = 16 * 1024;
+	//stbuf->f_ffree = 1000;
+	//stbuf->f_favail = 1000;
 	return 0;
 }
 
 int main(int argc, char* argv[])
 {
+	int i;
+
+	for (i = 0; i < argc; i++) {
+		printf("[%d] %s\n", i, argv[i]);
+	}
+
 	fuse_oper.getattr = fuse_getattr;
 	fuse_oper.access = fuse_access;
 	fuse_oper.mknod = fuse_mknod;
@@ -177,6 +210,8 @@ int main(int argc, char* argv[])
 	fuse_oper.statfs = fuse_statfs;
 	fuse_oper.readdir = fuse_readdir;
 	fuse_oper.chmod = fuse_chmod;
+
 	fs = nrfsConnect("default", 0, 0);
+
 	fuse_main(argc, argv, &fuse_oper, NULL);
 }
